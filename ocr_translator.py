@@ -5,16 +5,15 @@ import base64
 import hashlib
 import time
 import uuid
-import json
 import os
 
-# 有道 API 配置（用户需替换为实际值）
+# youdao API
 YOUDAO_OCR_URL = 'https://openapi.youdao.com/ocrapi'
 YOUDAO_TRANSLATE_URL = 'https://openapi.youdao.com/api'
-APP_KEY = '0132dd473eb9f867'  # 替换为你的有道应用ID
-APP_SECRET = 'zFeRKbVYdiSxMJO2IjkkJntpfI1sI9yQ'  # 替换为你的有道应用密钥
+APP_KEY = '0132dd473eb9f867'  # youdao ID
+APP_SECRET = 'zFeRKbVYdiSxMJO2IjkkJntpfI1sI9yQ'  # password
 
-# 有道翻译支持的语言代码（从文档提取，支持自动检测源语言）
+# Youdao Translate supports language codes (extracted from the document, supports automatic detection of source language)
 SUPPORTED_LANGUAGES = {
     'English (en)': 'en',
     'Chinese Simplified (zh-CHS)': 'zh-CHS',
@@ -82,14 +81,14 @@ def extract_text_from_image(image_path):
                     extracted_text += word.get('text', '') + '\n'
             return extracted_text.strip()
         else:
-            raise ValueError(f"有道 OCR API 错误: {result.get('errorCode', '未知错误')}")
+            raise ValueError(f"youdao OCR API err: {result.get('errorCode', 'unknow err')}")
     except Exception as e:
-        raise ValueError(f"提取文字错误: {e}")
+        raise ValueError(f"Text extraction error: {e}")
 
 def translate_text_youdao(text, dest_lang):
     if len(text) > 5000:
         text = text[:5000]
-        messagebox.showwarning("警告", "文本长度超过 5000 字符，已截断。")
+        messagebox.showwarning("Warning", "The text is longer than 5000 characters and has been truncated.")
 
     try:
         data = {
@@ -112,14 +111,14 @@ def translate_text_youdao(text, dest_lang):
         if 'errorCode' in result and result['errorCode'] == '0':
             return result['translation'][0]
         else:
-            raise ValueError(f"有道翻译 API 错误: {result.get('errorCode', '未知错误')}")
+            raise ValueError(f"youdao API err: {result.get('errorCode', 'unknow err')}")
     except Exception as e:
-        raise ValueError(f"翻译错误: {e}")
+        raise ValueError(f"err: {e}")
 
 class OCRTranslatorApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("图像文字识别与翻译工具")
+        self.root.title("Image text recognition and translation tools")
         self.root.geometry("600x500")
         self.root.configure(bg="#f0f0f0")
 
@@ -127,44 +126,44 @@ class OCRTranslatorApp:
         self.extracted_text = None
         self.translated_text = None
 
-        # 样式
+        # style
         style = ttk.Style()
         style.configure("TButton", font=("Arial", 12), padding=10)
         style.configure("TLabel", font=("Arial", 12), background="#f0f0f0")
         style.configure("TCombobox", font=("Arial", 12))
 
-        # 上传按钮
-        self.upload_btn = ttk.Button(root, text="上传图片 (PNG/JPG)", command=self.upload_image)
+        # upload
+        self.upload_btn = ttk.Button(root, text="Upload an image (PNG/JPG)", command=self.upload_image)
         self.upload_btn.pack(pady=20)
 
-        # 识别按钮
-        self.recognize_btn = ttk.Button(root, text="识别图像文字", command=self.recognize_text, state=tk.DISABLED)
+        # recognize_btn
+        self.recognize_btn = ttk.Button(root, text="Recognize text in images", command=self.recognize_text, state=tk.DISABLED)
         self.recognize_btn.pack(pady=10)
 
-        # 文字输出区域
-        self.text_label = ttk.Label(root, text="识别/翻译结果：")
+        # output
+        self.text_label = ttk.Label(root, text="Recognition/translation results：")
         self.text_label.pack(pady=10)
         self.text_output = tk.Text(root, height=10, width=60, font=("Arial", 10), wrap=tk.WORD)
         self.text_output.pack(pady=10)
         self.text_output.config(state=tk.DISABLED)
 
-        # 保存按钮
-        self.save_btn = ttk.Button(root, text="保存当前文字到文件", command=self.save_text, state=tk.DISABLED)
+        # save
+        self.save_btn = ttk.Button(root, text="Save the current text to a file", command=self.save_text, state=tk.DISABLED)
         self.save_btn.pack(pady=10)
 
-        # 翻译区域
+        # translate
         self.translate_frame = tk.Frame(root, bg="#f0f0f0")
         self.translate_frame.pack(pady=10)
-        self.translate_label = ttk.Label(self.translate_frame, text="翻译到：")
+        self.translate_label = ttk.Label(self.translate_frame, text="Translate to：")
         self.translate_label.pack(side=tk.LEFT, padx=5)
         self.lang_combo = ttk.Combobox(self.translate_frame, values=list(SUPPORTED_LANGUAGES.keys()), state="readonly")
         self.lang_combo.pack(side=tk.LEFT, padx=5)
-        self.translate_btn = ttk.Button(self.translate_frame, text="翻译", command=self.translate_text, state=tk.DISABLED)
+        self.translate_btn = ttk.Button(self.translate_frame, text="Translate", command=self.translate_text, state=tk.DISABLED)
         self.translate_btn.pack(side=tk.LEFT, padx=5)
 
     def upload_image(self):
         try:
-            # 调整 filetypes 格式，避免 macOS Tkinter 错误
+            # Adjust filetypes format to avoid macOS Tkinter errors
             file_path = filedialog.askopenfilename(
                 filetypes=[
                     ("PNG files", "*.png"),
@@ -175,19 +174,19 @@ class OCRTranslatorApp:
             if file_path:
                 ext = os.path.splitext(file_path)[1].lower()
                 if ext not in ['.png', '.jpg', '.jpeg']:
-                    messagebox.showerror("错误", "仅支持 PNG 或 JPG 格式。")
+                    messagebox.showerror("err", "Only PNG or JPG formats are supported.")
                     return
                 self.image_path = file_path
-                messagebox.showinfo("成功", f"图片上传成功：{os.path.basename(file_path)}")
+                messagebox.showinfo("success", f"Image uploaded successfully：{os.path.basename(file_path)}")
                 self.recognize_btn.config(state=tk.NORMAL)
             else:
-                messagebox.showinfo("提示", "未选择文件。")
+                messagebox.showinfo("tip", "No file selected.")
         except Exception as e:
-            messagebox.showerror("错误", f"上传文件失败: {str(e)}")
+            messagebox.showerror("err", f"File upload failed: {str(e)}")
 
     def recognize_text(self):
         if not self.image_path:
-            messagebox.showerror("错误", "请先上传图片。")
+            messagebox.showerror("err", "Please upload a picture first.")
             return
         try:
             self.extracted_text = extract_text_from_image(self.image_path)
@@ -199,15 +198,15 @@ class OCRTranslatorApp:
             self.translate_btn.config(state=tk.NORMAL)
             self.translated_text = None
         except ValueError as ve:
-            messagebox.showerror("错误", str(ve))
+            messagebox.showerror("err", str(ve))
 
     def translate_text(self):
         if not self.extracted_text:
-            messagebox.showerror("错误", "请先识别文字。")
+            messagebox.showerror("err", "Please recognize the text first")
             return
         selected_lang = self.lang_combo.get()
         if not selected_lang:
-            messagebox.showerror("错误", "请选择目标语言。")
+            messagebox.showerror("err", "Please select the target language.")
             return
         dest_lang = SUPPORTED_LANGUAGES[selected_lang]
         try:
@@ -218,7 +217,7 @@ class OCRTranslatorApp:
             self.text_output.config(state=tk.DISABLED)
             self.save_btn.config(state=tk.NORMAL)
         except ValueError as ve:
-            messagebox.showerror("错误", str(ve))
+            messagebox.showerror("err", str(ve))
 
     def save_text(self):
         if self.translated_text:
@@ -228,7 +227,7 @@ class OCRTranslatorApp:
             text_to_save = self.extracted_text
             default_name = "extracted_text.txt"
         else:
-            messagebox.showerror("错误", "没有文字可保存。")
+            messagebox.showerror("err", "no text to save")
             return
 
         try:
@@ -240,9 +239,9 @@ class OCRTranslatorApp:
             if file_path:
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(text_to_save)
-                messagebox.showinfo("成功", "文字保存成功！")
+                messagebox.showinfo("success", "text saved successfully！")
         except Exception as e:
-            messagebox.showerror("错误", f"保存文件失败: {str(e)}")
+            messagebox.showerror("err", f"save text fail: {str(e)}")
 
 if __name__ == "__main__":
     root = tk.Tk()
