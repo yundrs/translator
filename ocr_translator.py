@@ -49,7 +49,7 @@ def extract_text_from_image(image_path):
     try:
         file_size = os.path.getsize(image_path) / (1024 * 1024)  # MB
         if file_size > 2:
-            raise ValueError("图像大小超过 2MB 限制。")
+            raise ValueError("img size over 2MB.")
 
         with open(image_path, 'rb') as f:
             img_data = base64.b64encode(f.read()).decode('utf-8')
@@ -128,7 +128,9 @@ class OCRTranslatorApp:
 
         # style
         style = ttk.Style()
-        style.configure("TButton", font=("Arial", 12), padding=10)
+        style.theme_use('clam')
+        style.configure("TButton", font=("Arial", 12), padding=10, background="#4CAF50", foreground="white")
+        style.map("TButton", background=[('active', '#45a049')])
         style.configure("TLabel", font=("Arial", 12), background="#f0f0f0")
         style.configure("TCombobox", font=("Arial", 12))
 
@@ -143,9 +145,18 @@ class OCRTranslatorApp:
         # output
         self.text_label = ttk.Label(root, text="Recognition/translation results：")
         self.text_label.pack(pady=10)
-        self.text_output = tk.Text(root, height=10, width=60, font=("Arial", 10), wrap=tk.WORD)
-        self.text_output.pack(pady=10)
+
+        # Create a frame for text output and scrollbar
+        self.output_frame = tk.Frame(root, bg="#f0f0f0")
+        self.output_frame.pack(pady=10)
+
+        self.text_output = tk.Text(self.output_frame, height=10, width=60, font=("Arial", 10), wrap=tk.WORD, borderwidth=2, relief="groove")
+        self.text_output.pack(side=tk.LEFT)
         self.text_output.config(state=tk.DISABLED)
+
+        self.scrollbar = tk.Scrollbar(self.output_frame, command=self.text_output.yview)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.text_output.config(yscrollcommand=self.scrollbar.set)
 
         # save
         self.save_btn = ttk.Button(root, text="Save the current text to a file", command=self.save_text, state=tk.DISABLED)
